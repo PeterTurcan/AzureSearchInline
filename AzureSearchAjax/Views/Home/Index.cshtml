@@ -1,0 +1,432 @@
+﻿@model AzureSearchAjax.Models.SearchData
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<head>
+    <meta charset="utf-8">
+    <title>Azure search facets demo</title>
+
+    <!-- removed-->
+    <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+          rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+
+
+    <!-- added  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="~/Scripts/jquery-1.10.2.js"></script>
+    <script src="~/Scripts/jquery-ui.js"></script>
+    <script src="~/Scripts/jquery.autocompleteInline.js"></script>-->
+
+    <style>
+        textarea.box1 {
+            width: 648px;
+            height: 30px;
+            border: none;
+            background-color: azure;
+            font-size: 14pt;
+            color: blue;
+        }
+
+        textarea.box2 {
+            width: 648px;
+            height: 100px;
+            border: none;
+            background-color: azure;
+            font-size: 12pt;
+        }
+
+        .sampleTitle {
+            font: 32px/normal 'Segoe UI Light',Arial,Helvetica,Sans-Serif;
+            margin: 20px 0;
+            font-size: 32px;
+            text-align: left;
+        }
+
+        .sampleText {
+            font: 16px/bold 'Segoe UI Light',Arial,Helvetica,Sans-Serif;
+            margin: 20px 0;
+            font-size: 14px;
+            text-align: left;
+            height: 30px;
+        }
+
+        .errorText {
+            font: 16px/bold 'Segoe UI Light',Arial,Helvetica,Sans-Serif;
+            margin: 20px 0;
+            font-size: 16px;
+            text-align: left;
+            height: 30px;
+            color: red;
+        }
+
+        .searchBoxForm {
+            width: 648px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 2px 4px 0 rgba(0,0,0,.16);
+            display: inline-block;
+            border-collapse: collapse;
+            border-spacing: 0;
+            list-style: none;
+            color: #666;
+            background: rgba(0,0,0,0) /* Blue background with 30% opacity */
+        }
+
+        .searchBox {
+            width: 568px;
+            font-size: 16px;
+            margin: 5px 0 1px 20px;
+            padding: 0 10px 0 0;
+            border: 0;
+            max-height: 30px;
+            outline: none;
+            box-sizing: content-box;
+            height: 35px;
+            vertical-align: top;
+            background: rgba(0,0,0,0) /* Blue background with 30% opacity */
+        }
+
+        .searchBoxSubmit {
+            background-color: #fff;
+            border-color: #fff;
+            background-image: url(/images/search.png);
+            background-repeat: no-repeat;
+            height: 20px;
+            width: 20px;
+            text-indent: -99em;
+            border-width: 0;
+            border-style: solid;
+            margin: 10px;
+            outline: 0;
+        }
+
+        .pageButton {
+            border: none;
+            color: darkblue;
+            font-weight: normal;
+            width: 50px;
+        }
+
+        .pageSelected {
+            border: none;
+            color: black;
+            font-weight: bold;
+            width: 50px;
+        }
+
+        .pageButtonDisabled {
+            border: none;
+            color: lightgray;
+            font-weight: bold;
+            width: 50px;
+        }
+
+        .tdPage {
+            width: 50px;
+            background-color: none;
+        }
+    </style>
+</head>
+
+<h1 class="sampleTitle">
+    <img src="~/images/azure-logo.png" width="80" />
+    Hotels demo search Ajax
+</h1>
+
+<!--
+<input type="text" id="txtName" value="Ajax!" />
+<input type="button" id="btnGet" value="Get Current Time" />
+<br /><br />
+
+
+<script type="text/javascript">
+    $(function () {
+        $("#btnGet").click(function () {
+            var crazyUrl = "/Home/AjaxMethod?term=" + $("#txtName").val();
+            //var boxText = $("#txtName").val();
+            //var qUrl = crazyUrl.concat(boxText);
+            //var qUrl2 = qUrl.concat("&");
+
+            alert(crazyUrl);
+            $.ajax({
+                type: "POST",
+                url: crazyUrl,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    alert("Search text: " + response.searchText + "\nResult count: " + response.resultCount);
+                },
+                failure: function (response) {
+                    alert(response.searchText);
+                },
+                error: function (response) {
+                    alert(response.searchText);
+                }
+            });
+        });
+    });
+</script>
+    -->
+
+@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+{
+    // Display the search text box, with the search icon to the right of it.
+
+    <br /><br />
+
+    //<div id="searchinput2" style="position: relative; left: 0; top: 0">
+    //    <div id="underneath" class="searchBox"></div>
+    //</div>
+
+
+    <div id="underneath" class="searchBox" style="position: relative; left: 0; top: 0">
+    </div>
+
+    <div id="searchinput" class="searchBoxForm" style="position: relative; left: 0; top: -39px">
+        @Html.TextBoxFor(m => m.searchText, new { @class = "searchBox", @id = "azureautocomplete" }) <input value="" class="searchBoxSubmit" type="submit">
+    </div>
+
+
+    // This script handles facets. WORKS
+    <script>
+        $.getJSON("/home/facets", function (data) {
+
+            $("#azuresearchfacets").autocomplete({
+                source: data,
+                minLength: 2,
+                position:
+                {
+                    my: "left top",
+                    at: "left-23 bottom+10"
+                }
+            });
+        });
+    </script>
+
+    // This script handles suggestions but no highlighting WORKS
+    <script>
+
+
+        $("#azureautosuggest").autocomplete({
+            source: "/Home/Suggest?highlights=true&fuzzy=false&",
+            minLength: 3,
+            position: {
+                my: "left top",
+                at: "left-23 bottom+10"
+            }
+        });
+    </script>
+
+    // This script handles suggestions and highlighting WORKS
+    <script>
+        var updateTextbox = function (event, ui) {
+            var result = ui.item.value.replace(/<\/?[^>]+(>|$)/g, "");
+            $("#azuresuggesthighlights").val(result);
+            return false;
+        };
+
+        $("#azuresuggesthighlights").autocomplete({
+            html: true,
+            source: "/home/suggest?highlights=true&fuzzy=false&",
+            minLength: 3,
+            position: {
+                my: "left top",
+                at: "left-23 bottom+10"
+            },
+            select: updateTextbox,
+            focus: updateTextbox
+        }).data("ui-autocomplete")._renderItem = function (ul, item) {
+            return $("<li></li>")
+                .data("item.autocomplete", item)
+                .append("<a>" + item.label + "</a>")
+                .appendTo(ul);
+        };
+    </script>
+
+    // This script handles autocomplete on its own - no suggestions DOESNT WORK
+
+    <script>
+        // using modified jQuery Autocomplete plugin v1.2.6 http://xdsoft.net/jqplugins/autocomplete/
+        // $.autocomplete -> $.autocompleteInline
+
+        // works to call autocomplete - need text as parameter and results stuff
+        // *********************************************************************
+        //var suggestedText = "";
+
+        $('#azureautocomplete').autocomplete({
+            delay: 500,
+            minLength: 2,
+            position: {
+                my: "left top",
+                at: "left-23 bottom+10"
+            },
+            source: function (request, response) {
+                var crazyUrl = "/Home/AutoComplete?term=" + $("#azureautocomplete").val();
+                $.ajax({
+                    url: crazyUrl,
+                    dataType: "json",
+                    success: function (data) {
+                        if (data && data.length > 0) {
+                            //alert(document.getElementById("underneath").innerHTML);
+                            document.getElementById("underneath").innerHTML = data[0];
+                            //response(data);
+                        } else {
+                            document.getElementById("underneath").innerHTML = "";
+                        }
+                    }
+                });
+            }
+        });
+
+        // complete on TAB and clear on ESC
+        $("#azureautocomplete").keydown(function (evt) {
+            var suggestedText = document.getElementById("underneath").innerHTML;
+            if (evt.keyCode === 9 /* TAB */ && suggestedText.length > 0) {
+                $("#azureautocomplete").val(suggestedText);
+                return false;
+            } else if (evt.keyCode === 27 /* ESC */) {
+                document.getElementById("underneath").innerHTML = "";
+                $("#azureautocomplete").val("");
+            } else if (evt.keyCode === 8 /* ESC */) {
+                //alert("value = " + $("#azureautocomplete").val().length);
+                if ($("#azureautocomplete").val().length < 2) {
+                    document.getElementById("underneath").innerHTML = "";
+                }
+            }
+        });
+
+
+    </script>
+
+    // autocompletion done same as suggestions - WORKS
+    <script>
+        $("#azureautocompletebasic").autocomplete({
+            source: "/home/autocomplete",
+            minLength: 3,
+            position: {
+                my: "left top",
+                at: "left-23 bottom+10"
+            }
+        });
+    </script>
+
+
+
+    @if (Model != null)
+    {
+        // Show the result count.
+        <p class="sampleText">
+            @Html.DisplayFor(m => m.resultCount) Results
+        </p>
+        <hr />
+
+        <div id="myDiv" style="width: 800px; height: 450px; overflow-y: scroll;" onscroll="scrolled()">
+            <!-- Show the hotel data. All pages will have ResultsPerPage entries, except for the last page. -->
+            @for (var i = 0; i < Model.hotels.Count; i++)
+            {
+                // Display the hotel name.
+                @Html.TextAreaFor(m => Model.getHotel(i).HotelName, new { @class = "box1" })
+                <br />
+                // Display the hotel sample room and description.
+                @Html.TextArea("idh", Model.getHotelDescription(i), new { @class = "box2" })
+                <br /> <br />
+            }
+        </div>
+
+        <script>
+            function scrolled() {
+                //alert("so far");
+                if (myDiv.offsetHeight + myDiv.scrollTop >= myDiv.scrollHeight) {
+                    //alert("hi");
+                    $.getJSON("/home/next", function (data) {
+                        var div = document.getElementById('myDiv');
+                        //alert(data);
+                        for (var i = 0; i < data.length; i += 2) {
+                            div.innerHTML += '\n<textarea class="box1">' + data[i] + '</textarea>';
+                            div.innerHTML += '\n<textarea class="box2">' + data[i + 1] + '</textarea><br /><br />';
+                        }
+                    });
+                }
+            }
+        </script>
+    }
+}
+<!--
+
+@if (Model != null && Model.pageCount > 1)
+{
+    // If there is more than one page of results, show the paging buttons.
+    <table>
+        <tr>
+            <td class="tdPage">
+                @if (Model.currentPage > 0)
+                {
+                    <p class="pageButton">
+                        @Html.ActionLink("|<", "Page", "Home", new { paging = "0" }, null)
+                    </p>
+                }
+                else
+                {
+                    <p class="pageButtonDisabled">|&lt;</p>
+                }
+            </td>
+
+            <td class="tdPage">
+                @if (Model.currentPage > 0)
+                {
+                    <p class="pageButton">
+                        @Html.ActionLink("<", "Page", "Home", new { paging = "prev" }, null)
+                    </p>
+                }
+                else
+                {
+                    <p class="pageButtonDisabled">&lt;</p>
+                }
+            </td>
+
+            @for (var pn = Model.leftMostPage; pn < Model.leftMostPage + Model.pageRange; pn++)
+            {
+                <td class="tdPage">
+                    @if (Model.currentPage == pn)
+                    {
+                        // Convert displayed page numbers to 1-based and not 0-based.
+                        <p class="pageSelected">@(pn + 1)</p>
+                    }
+                    else
+                    {
+                        <p class="pageButton">
+                            @Html.ActionLink((pn + 1).ToString(), "Page", "Home", new { paging = @pn }, null)
+                        </p>
+                    }
+                </td>
+            }
+
+            <td class="tdPage">
+                @if (Model.currentPage < Model.pageCount - 1)
+                {
+                    <p class="pageButton">
+                        @Html.ActionLink(">", "Page", "Home", new { paging = "next" }, null)
+                    </p>
+                }
+                else
+                {
+                    <p class="pageButtonDisabled">&gt;</p>
+                }
+            </td>
+
+            <td class="tdPage">
+                @if (Model.currentPage < Model.pageCount - 1)
+                {
+                    <p class="pageButton">
+                        @Html.ActionLink(">|", "Page", "Home", new { paging = Model.pageCount - 1 }, null)
+                    </p>
+                }
+                else
+                {
+                    <p class="pageButtonDisabled">&gt;|</p>
+                }
+            </td>
+        </tr>
+    </table>
+}-->
