@@ -366,6 +366,50 @@ namespace AzureSearchAjax.Controllers
             return new JsonResult((object)autocomplete);
         }
 
+        public async Task<ActionResult> AutoCompleteAndSuggest(string term)
+        {
+            // Use static variables to set up the configuration and Azure service and index clients, for efficiency.
+            _builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
+            _configuration = _builder.Build();
+
+            _serviceClient = CreateSearchServiceClient(_configuration);
+            _indexClient = _serviceClient.Indexes.GetClient("hotels");
+
+            //Call autocomplete API and return results
+            AutocompleteParameters ap = new AutocompleteParameters()
+            {
+                AutocompleteMode = AutocompleteMode.OneTermWithContext,
+                UseFuzzyMatching = false,
+                Top = 1,
+            };
+            AutocompleteResult autocompleteResult = await _indexClient.Documents.AutocompleteAsync(term, "sg", ap);
+
+            // Call suggest API and return results
+            SuggestParameters sp = new SuggestParameters()
+            {
+                UseFuzzyMatching = false,
+                Top = 8,
+            };
+
+            // Only one suggester can be specified per index. The name of the suggester is set when the suggester is specified by other API calls.
+            // The suggester for the hotel database is called "sg" and simply searches the hotel name.
+            DocumentSuggestResult<Hotel> suggestResult = await _indexClient.Documents.SuggestAsync<Hotel>(term, "sg", sp);
+
+            List<string> results = new List<string>();
+            if (autocompleteResult.Results.Count > 0)
+            {
+                results.Add(autocompleteResult.Results[0].Text);
+            } else
+            {
+                results.Add("");
+            }
+            for (int n=0; n<suggestResult.Results.Count; n++)
+            {
+                results.Add(suggestResult.Results[n].Text);
+            }
+            return new JsonResult((object)results);
+        }
+
         public async Task<ActionResult> Facets()
         {
             // Use static variables to set up the configuration and Azure service and index clients, for efficiency.
@@ -408,6 +452,12 @@ namespace AzureSearchAjax.Controllers
  * 5. getJSON not working in either scenario (autocomplete, facets) - calls controller, but nothing displayed - FACETS working
  * 
  * 
- * 6.   inline autocomplete is not working
+ * 6.   inline autocomplete is working - YAY
+ * investigate search as case sensitive to avoid need for forcing to upper/lower case
+ * investigate any odd behaviour of inline autocomplete
+ * possibly investigate highlighting too - or not
+ * investigate using percentages to get one box on another - more robust
+ * mouseclick corrupts textbox - must clear underneath on click
+ * 
  */
 
