@@ -6,7 +6,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Azure search facets demo</title>
+    <title>Azure search inline autocorrect and suggestions demo</title>
 
     <!-- removed-->
     <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
@@ -70,7 +70,7 @@
             border-spacing: 0;
             list-style: none;
             color: #666;
-            background: rgba(0,0,0,0) /* Blue background with 30% opacity */
+            background: rgba(0,0,0,0) /* force to tranparent white */
         }
 
         .searchBox {
@@ -84,7 +84,7 @@
             box-sizing: content-box;
             height: 35px;
             vertical-align: top;
-            background: rgba(0,0,0,0) /* Blue background with 30% opacity */
+            background: rgba(0,0,0,0); 
         }
 
         .searchBoxSubmit {
@@ -131,7 +131,7 @@
 
 <h1 class="sampleTitle">
     <img src="~/images/azure-logo.png" width="80" />
-    Hotels demo search Ajax
+    Hotels search inline autocorrect and suggestions demo
 </h1>
 
 <!--
@@ -244,15 +244,9 @@
         };
     </script>
 
-    // This script handles autocomplete on its own - no suggestions DOESNT WORK
+    // This script handles autocomplete and suggestions WORKS!!!
 
     <script>
-        // using modified jQuery Autocomplete plugin v1.2.6 http://xdsoft.net/jqplugins/autocomplete/
-        // $.autocomplete -> $.autocompleteInline
-
-        // works to call autocomplete - need text as parameter and results stuff
-        // *********************************************************************
-        //var suggestedText = "";
 
         $('#azureautocomplete').autocomplete({
             delay: 500,
@@ -262,15 +256,24 @@
                 at: "left-23 bottom+10"
             },
             source: function (request, response) {
-                var crazyUrl = "/Home/AutoComplete?term=" + $("#azureautocomplete").val();
+                var crazyUrl = "/Home/AutoCompleteAndSuggest?term=" + $("#azureautocomplete").val();
                 $.ajax({
                     url: crazyUrl,
                     dataType: "json",
                     success: function (data) {
                         if (data && data.length > 0) {
                             //alert(document.getElementById("underneath").innerHTML);
+
+                            // Show the autocomplete suggestion
                             document.getElementById("underneath").innerHTML = data[0];
-                            //response(data);
+
+                            // Remove the top suggestion as its used for inline autocomplete
+                            var array = new Array();
+                            for (var n = 1; n < data.length; n++) {
+                                array[n - 1] = data[n];
+                            }
+                            // Show the drop down list of suggestions
+                            response(array);
                         } else {
                             document.getElementById("underneath").innerHTML = "";
                         }
@@ -281,6 +284,7 @@
 
         // complete on TAB and clear on ESC
         $("#azureautocomplete").keydown(function (evt) {
+
             var suggestedText = document.getElementById("underneath").innerHTML;
             if (evt.keyCode === 9 /* TAB */ && suggestedText.length > 0) {
                 $("#azureautocomplete").val(suggestedText);
@@ -288,15 +292,54 @@
             } else if (evt.keyCode === 27 /* ESC */) {
                 document.getElementById("underneath").innerHTML = "";
                 $("#azureautocomplete").val("");
-            } else if (evt.keyCode === 8 /* ESC */) {
+            } else if (evt.keyCode === 8 /* Backspace */) {
                 //alert("value = " + $("#azureautocomplete").val().length);
                 if ($("#azureautocomplete").val().length < 2) {
                     document.getElementById("underneath").innerHTML = "";
                 }
+            } else if (evt.keyCode >= 37 && evt.keyCode <= 40 /* any arrow */) {
+                document.getElementById("underneath").innerHTML = "";
             }
         });
 
+        // Character replace function
+        function setCharAt(str, index, chr) {
+            if (index > str.length - 1) return str;
+            return str.substr(0, index) + chr + str.substr(index + 1);
+        }
 
+        // This function is needed to clear the "underneath" text when the user clicks on an autocomplete suggestion
+        $("#azureautocomplete").on("input blur change focus", function (e) {
+            var intervalDuration = 2000, // ms interval
+                interval = setInterval(function () {
+
+                    // Compare the autocorrect suggestion with the actual typed string.
+                    var inputText = document.getElementById("azureautocomplete").value;
+                    var autoText = document.getElementById("underneath").innerHTML;
+
+                    // If the typed string is longer, then clear the suggestion.
+                    if (inputText.length > autoText.length) {
+                        document.getElementById("underneath").innerHTML = "";
+                    } else {
+
+                        // If the strings match, change the case of the suggestion to match the case of the typed input.
+                        if (autoText.toLowerCase().startsWith(inputText.toLowerCase())) {
+                            for (var n = 0; n < inputText.length; n++) {
+                                autoText = setCharAt(autoText, n, inputText[n]);
+                            }
+                            document.getElementById("underneath").innerHTML = autoText;
+
+                        } else {
+                            // The strings do not match, so remove the suggestion.
+                            document.getElementById("underneath").innerHTML = "";
+                        }
+                    }
+                    
+                    // If the element loses focus, stop checking.
+                    if (!$input.is(':focus')) clearInterval(interval);
+
+                }, intervalDuration);
+        });
     </script>
 
     // autocompletion done same as suggestions - WORKS
